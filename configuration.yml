@@ -10,23 +10,6 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 rest:
-  - resource: http://192.168.169.41:334/dw?area=temperature
-    sensor:
-      - name: "Raum"
-        value_template: "{{ value_json[0]['value'][0]['temperature'] }}"  
-        device_class: temperature
-        unit_of_measurement: "°C"
-        unique_id: "heizung.temp_luft"
-      - name: "Boiler"
-        value_template: "{{ value_json[0]['value'][1]['temperature'] }}"  
-        device_class: temperature
-        unit_of_measurement: "°C"
-        unique_id: "heizung.temp_boiler"
-      - name: "CO₂"
-        value_template: "{{ value_json[0]['value'][2]['temperature'] }}"  
-        device_class: carbon_dioxide
-        unit_of_measurement: "ppm"
-        unique_id: "heizung.co2"
   - resource: http://192.168.169.41:334/dw?area=values
     binary_sensor:
       - name: "Anforderung: Raum-Heizstufe 1"
@@ -44,6 +27,7 @@ rest:
       - name: " Anforderung: Brauchwasserheizung Elektroheizstab "
         value_template: "{{ (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1038) | list | first).currentValue }}"      
         unique_id: "heizung.anforderung_brauchwasser_elektro"
+        device_class: runningorderung_brauchwasser_elektro"
         device_class: running
     sensor:  
       - name: "Verdampferregister"
@@ -61,9 +45,9 @@ rest:
         unique_id: "heizung.temp_ww_wp"
         device_class: temperature
         unit_of_measurement: "°C"
-      - name: "WP Betriebsstatus"
-        value_template: "{{ (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1314) | list | first).currentValue }}"      
-        unique_id: "heizung.wp_betriebsstatus"
+      #- name: "WP Betriebsstatus"
+      #  value_template: "{{ (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1314) | list | first).currentValue }}"      
+      #  unique_id: "heizung.wp_betriebsstatus"
       - name: "Ist-Drehzahl Zuluftventilator"
         value_template: "{{ (value_json[0]['value'][0]['values'] | selectattr('parameterId','eq', 1184) | list | first).currentValue }}"
         unique_id: "heizung.zuluft_ist_drehzahl"
@@ -73,7 +57,7 @@ rest:
         unique_id: "heizung.abluft_ist_drehzahl"
         unit_of_measurement: "1/min"
       - name: "Status WP"
-        unique_id: "heizung.wp_betriebsstatus_label"
+        unique_id: "heizung.status_wp"
         value_template: >
             {% set mapper = {
               0 : 'Wiedereinschaltsperre',
@@ -93,7 +77,48 @@ rest:
               14 : 'Abtaumodus definieren'} %}
             {% set state = (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1314) | list | first).currentValue %}
             {{ mapper[state] if state in mapper else 'Unbekannt' }}
-    
-            
+      - name: "WP Betriebsstatus"
+        unique_id: "heizung.wp_betriebsstatus"
+        value_template: >
+            {% set mapper = {
+              0 : 'Aus',
+              1 : 'Badheizung',
+              2 : 'Boilerladung',
+              3 : 'Boilerladung/Frischluftheizung',
+              4 : 'Boilerladung/Niedertemperaturheizung',
+              5 : 'Frostschutz',
+              6 : 'Frischluftheizung',
+              7 : 'Niedertemperaturheizung',
+              8 : 'Frischluft-/Niedertemperaturheizung',
+              9 : 'solare Heizungsunterstützung',
+              10 : 'Passive Kühlung',
+              11 : 'Aktive Kühlung',
+              12 : 'Funktionsheizen'} %}
+            {% set state = (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1346) | list | first).currentValue %}
+            {{ mapper[state] if state in mapper else 'Unbekannt' }}
+      - name: "Raum"
+        value_template: "{{ (value_json[0]['value'][2]['values'] | selectattr('parameterId','eq', 200) | list | first).currentValue / 1000 | round }}"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        unique_id: "heizung.temp_raum"
+      - name: "Raum Soll"
+        value_template: "{{ (value_json[0]['value'][2]['values'] | selectattr('parameterId','eq', 5016) | list | first).currentValue / 1000 | round }}"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        unique_id: "heizung.temp_raum_soll"
+      - name: "Boiler"
+        value_template: "{{ (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 1054) | list | first).currentValue / 1000 | round }}"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        unique_id: "heizung.temp_boiler"
+      - name: "Brauchwasser Soll"
+        value_template: "{{ (value_json[0]['value'][1]['values'] | selectattr('parameterId','eq', 5064) | list | first).currentValue / 1000 | round }}"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        unique_id: "heizung.brauchwasser_soll"
+      - name: "CO₂"
+        value_template: "{{ (value_json[0]['value'][0]['values'] | selectattr('parameterId','eq', 230) | list | first).currentValue }}"
+        device_class: carbon_dioxide
+        unit_of_measurement: "ppm"
+        unique_id: "heizung.co2"
         
-    
